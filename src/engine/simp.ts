@@ -41,7 +41,7 @@ import {
 } from './terms';
 import { Theory, Thm, instThm } from './theory';
 import { match, inst, collectVarNames, Subst } from './unify';
-import { toPoly, polyAdd, polyIsConst, fromPoly, isArithType, linarith, Poly, isArithRel } from './arith';
+import { toPoly, polyAdd, polyIsConst, fromPoly, isArithType, linarith, Poly, Mono, isArithRel } from './arith';
 import { Goal } from './goal';
 
 export interface SimpRule {
@@ -678,6 +678,16 @@ export class Simplifier {
         if (linarith([], mkNot(atom))) return res(false);
       } catch {
         /* ignore */
+      }
+    }
+    // nat: sum of positive linear terms = 0  ⟷  all of them are 0
+    if (!negated && rel === 'eq' && isNatT) {
+      const pos: Mono[] = [];
+      const neg: Mono[] = [];
+      for (const m of d.values()) (m.coeff > 0 ? pos : neg).push(m);
+      const side = pos.length === 0 ? neg : neg.length === 0 ? pos : null;
+      if (side && side.length && side.every((m) => m.atoms.length === 1)) {
+        return conjs(side.map((m) => mkEq(m.atoms[0], mkC('#0', ty))));
       }
     }
     // cancellation of common monomials
