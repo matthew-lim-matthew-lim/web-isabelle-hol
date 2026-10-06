@@ -33,6 +33,10 @@ import {
   tsubst,
   mapTypes,
   replaceTerm,
+  tunify,
+  tmapV,
+  freshTS,
+  TSubst,
   occursTerm,
 } from './terms';
 import { Goal, termToGoal, goalFrees, goalToTerm, freshFree } from './goal';
@@ -270,7 +274,21 @@ export function funInductTac(thy: Theory, g: Goal, fi: FunInfo, xs: string[], ar
   const used = goalFrees(g);
   const goals: Goal[] = [];
   const cases: CaseInfo[] = [];
-  fi.eqs.forEach((eq, idx) => {
+  // instantiate the function's type variables to match the induction variables
+  const tsub: TSubst = new Map();
+  const tvMap = new Map<string, Type>();
+  const freshen = (ty: Type): Type => tmapV(ty, (n) => {
+    let r = tvMap.get(n);
+    if (!r) {
+      r = freshTS();
+      tvMap.set(n, r);
+    }
+    return r;
+  });
+  if (fi.eqs.length) fi.eqs[0].lhsArgs.forEach((p, i) => tunify(freshen(typeOf(p)), vs[i].ty, tsub));
+  const fixT = (t: Term): Term => mapTypes(t, (ty) => tsubst(freshen(ty), tsub));
+  fi.eqs.forEach((eq0, idx) => {
+    const eq = { lhsArgs: eq0.lhsArgs.map(fixT), rhs: fixT(eq0.rhs), vars: eq0.vars.map(fixT) };
     const u = new Set(used);
     for (const v of vs) u.delete(v.name);
     for (const a of arbs) u.delete(a.name);

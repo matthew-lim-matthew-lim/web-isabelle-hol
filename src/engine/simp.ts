@@ -136,10 +136,45 @@ function isPermutative(l: Term, r: Term): boolean {
 
 /** Term order for ordered rewriting. */
 function termLess(a: Term, b: Term): boolean {
+  return termOrd(a, b) < 0;
+}
+
+function atomName(t: Term): string {
+  switch (t.k) {
+    case 'C':
+      return 'c' + t.name;
+    case 'F':
+      return 'f' + t.name;
+    case 'V':
+      return 'v' + t.name;
+    case 'B':
+      return 'b' + t.i;
+    default:
+      return 'z';
+  }
+}
+
+/** Isabelle-like term order: size, then head symbol, then arguments lexicographically. */
+function termOrd(a: Term, b: Term): number {
   const sa = termSize(a);
   const sb = termSize(b);
-  if (sa !== sb) return sa < sb;
-  return termKey(a) < termKey(b);
+  if (sa !== sb) return sa - sb;
+  const A = stripApp(a);
+  const B = stripApp(b);
+  if (A.head.k === 'L' && B.head.k === 'L') {
+    const c = termOrd(A.head.body, B.head.body);
+    if (c) return c;
+  } else {
+    const ha = atomName(A.head);
+    const hb = atomName(B.head);
+    if (ha !== hb) return ha < hb ? -1 : 1;
+  }
+  if (A.args.length !== B.args.length) return A.args.length - B.args.length;
+  for (let i = 0; i < A.args.length; i++) {
+    const c = termOrd(A.args[i], B.args[i]);
+    if (c) return c;
+  }
+  return 0;
 }
 
 export class Simpset {
@@ -254,14 +289,15 @@ export class Simplifier {
     return r;
   }
 
-  private norm1(t: Term): Term {
+  private norm1(t: Term, top = true): Term {
     this.tick();
+    const rewriteTop = (u: Term) => (top ? this.rewriteTop(u) : u);
     switch (t.k) {
       case 'L': {
         const z = mkF('_sx' + ++sxCounter, t.ty);
         const b = this.norm(substBound(t.body, z));
         const lam = mkL(t.x, t.ty, abstractOver(b, z));
-        return this.rewriteTop(betaNorm(lam));
+        return rewriteTop(betaNorm(lam));
       }
       case 'A': {
         const { head, args } = stripApp(t);
@@ -283,28 +319,28 @@ export class Simplifier {
             const a = this.withAsm(c, () => this.norm(args[1]));
             const b = this.withAsm(this.negate(c), () => this.norm(args[2]));
             if (termEq(a, b)) return a;
-            return this.rewriteTop(mkApps(head, [c, a, b]));
+            return rewriteTop(mkApps(head, [c, a, b]));
           }
           if ((n === 'imp' || n === '==>') && args.length === 2) {
             const a = this.norm(args[0]);
             if (isConst(a, 'False')) return TRUE;
             if (isConst(a, 'True')) return this.norm(args[1]);
             const b = this.opts.noAsm ? this.norm(args[1]) : this.withAsm(a, () => this.norm(args[1]));
-            return this.rewriteTop(mkApps(mkC('imp', head.ty), [a, b]));
+            return rewriteTop(mkApps(mkC('imp', head.ty), [a, b]));
           }
           if (n === 'conj' && args.length === 2) {
             const a = this.norm(args[0]);
             if (isConst(a, 'False')) return FALSE;
             const b = this.norm(args[1]);
-            return this.rewriteTop(mkApps(head, [a, b]));
+            return rewriteTop(mkApps(head, [a, b]));
           }
         }
         const h2 = head.k === 'A' ? this.norm(head) : head;
         const nargs = args.map((a) => this.norm(a));
-        return this.rewriteTop(mkApps(h2, nargs));
+        return rewriteTop(mkApps(h2, nargs));
       }
       default:
-        return this.rewriteTop(t);
+        return rewriteTop(t);
     }
   }
 
@@ -314,7 +350,7 @@ export class Simplifier {
   }
 
   rewriteTop(t: Term): Term {
-    for (let iter = 0; iter < 100; iter++) {
+    for (;;) {
       this.tick();
       const r = this.step(t);
       if (r === null) {
@@ -324,10 +360,12 @@ export class Simplifier {
         }
         return t;
       }
-      // r is the rewritten term; normalise its subterms
-      return this.norm(r);
+      // normalise the subterms of the rewritten term, then continue at the top
+      const key = termKey(r);
+      const c = this.cache.get(key);
+      if (c) return c;
+      t = this.norm1(r, false);
     }
-    return t;
   }
 
   /** One rewrite step at the top; returns null if no rule applies. */

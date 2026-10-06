@@ -308,6 +308,19 @@ class Tableau {
     return mkV(name, ty);
   }
 
+  /** instantiate a chain of leading quantifiers with fresh metavariables */
+  instAll(f: Term, qs: string[]): Term {
+    for (;;) {
+      const st = stripApp(f);
+      if (st.head.k === 'C' && qs.includes(st.head.name) && st.args.length === 1 && st.args[0].k === 'L') {
+        const lam = st.args[0];
+        f = betaNorm(substBound(lam.body, this.freshMV(lam.ty)));
+        continue;
+      }
+      return f;
+    }
+  }
+
   freshSk(ty: Type, hint: string): Term & { k: 'F' } {
     void hint;
     return mkF('_sk' + ++skCounter, ty) as Term & { k: 'F' };
@@ -445,19 +458,13 @@ class Tableau {
     const alts: Branch[][] = [];
     for (let i = 0; i < b.gammaL.length; i++) {
       const f = inst(b.gammaL[i], s);
-      const st = stripApp(f);
-      const lam = st.args[0] as Term & { k: 'L' };
-      const mv = this.freshMV(lam.ty);
       const g2 = [...b.gammaL.slice(0, i), ...b.gammaL.slice(i + 1), b.gammaL[i]];
-      alts.push([{ ...b, L: [...b.L, betaNorm(substBound(lam.body, mv))], gammaL: g2, uses: b.uses + 1 }]);
+      alts.push([{ ...b, L: [...b.L, this.instAll(f, ['All', '!!'])], gammaL: g2, uses: b.uses + 1 }]);
     }
     for (let i = 0; i < b.gammaR.length; i++) {
       const f = inst(b.gammaR[i], s);
-      const st = stripApp(f);
-      const lam = st.args[0] as Term & { k: 'L' };
-      const mv = this.freshMV(lam.ty);
       const g2 = [...b.gammaR.slice(0, i), ...b.gammaR.slice(i + 1), b.gammaR[i]];
-      alts.push([{ ...b, R: [...b.R, betaNorm(substBound(lam.body, mv))], gammaR: g2, uses: b.uses + 1 }]);
+      alts.push([{ ...b, R: [...b.R, this.instAll(f, ['Ex'])], gammaR: g2, uses: b.uses + 1 }]);
     }
     return alts.length ? alts : null;
   }

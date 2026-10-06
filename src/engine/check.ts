@@ -695,7 +695,10 @@ export class Checker {
       const nm = rules[i].name ?? `${decl.name}.intros(${i + 1})`;
       const th: Thm = { name: nm, prop: generalize(conv), global: true };
       intros.push(th);
-      if (rules[i].name) this.thy.addThms(rules[i].name!, [th]);
+      if (rules[i].name) {
+        this.thy.addThms(rules[i].name!, [th]);
+        this.thy.addThms(decl.name + '.' + rules[i].name!, [th]);
+      }
     });
     this.thy.addThms(decl.name + '.intros', intros);
     const info: InductiveInfo = { name: decl.name, arity: args.length, intros };
