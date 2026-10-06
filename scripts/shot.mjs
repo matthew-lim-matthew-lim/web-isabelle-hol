@@ -1,0 +1,13 @@
+import { chromium } from 'playwright-core';
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const page = await ctx.newPage();
+await page.goto('http://localhost:4173/ide/');
+await page.getByText('All checked ✓').first().waitFor({ timeout: 30000 });
+await page.locator('.cm-content').click();
+await page.keyboard.press('Control+End');
+await page.keyboard.type('\nlemma "rev xs = xs" by simp\n');
+await page.waitForTimeout(3000);
+await page.screenshot({ path: process.argv[2] });
+console.log(await page.locator('.cm-content').innerText());
+await browser.close();

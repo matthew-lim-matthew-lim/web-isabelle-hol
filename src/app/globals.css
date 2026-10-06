@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-height: 100dvh;
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+html,
+body {
+  @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  overflow-x: hidden;
+}
+
+.cm-editor {
+  height: 100%;
+  font-size: 14px;
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-scroller {
+  font-family: 'JetBrains Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+  line-height: 1.55;
+}
+@media (max-width: 640px) {
+  .cm-editor {
+    font-size: 13px;
+  }
+}
+.cm-isa-error {
+  text-decoration: underline wavy #ef4444;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+}
+.cm-isa-warning {
+  text-decoration: underline wavy #f59e0b;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+}
+.cm-isa-sorry {
+  background: rgba(245, 158, 11, 0.15);
+}
+.cm-isa-active {
+  background: rgba(52, 121, 252, 0.08);
+}
+.dark .cm-isa-active {
+  background: rgba(89, 159, 255, 0.12);
+}
+.cm-gutter-isa {
+  width: 6px;
+}
+.isa-gutter-ok,
+.isa-gutter-error,
+.isa-gutter-warning {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+}
+.isa-gutter-error {
+  background: #ef4444;
+}
+.isa-gutter-warning {
+  background: #f59e0b;
+}
+
+.prose-isa h3 {
+  @apply mt-6 mb-2 text-lg font-semibold;
+}
+.prose-isa h2 {
+  @apply mt-6 mb-2 text-xl font-semibold;
+}
+.prose-isa p {
+  @apply my-3 leading-relaxed;
+}
+.prose-isa ul {
+  @apply my-3 list-disc pl-6 space-y-1;
+}
+.prose-isa ol {
+  @apply my-3 list-decimal pl-6 space-y-1;
+}
+.prose-isa code {
+  @apply rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.9em] dark:bg-slate-800;
+}
+.prose-isa pre {
+  @apply my-3 overflow-x-auto rounded-lg bg-slate-100 p-3 font-mono text-sm dark:bg-slate-900;
+}
+.prose-isa pre code {
+  @apply bg-transparent p-0;
+}
+.prose-isa a {
+  @apply text-brand-600 underline dark:text-brand-400;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
