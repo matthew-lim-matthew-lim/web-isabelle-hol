@@ -1,0 +1,11 @@
+import { initPrelude } from '../src/engine/index';
+import { getPrelude } from '../src/engine/check';
+import { readProp, emptyCtx } from '../src/engine/typecheck';
+import { termToGoal } from '../src/engine/goal';
+import { blastGoal } from '../src/engine/classical';
+initPrelude();
+const thy = getPrelude()!;
+const t = readProp(emptyCtx(thy), process.argv[2]);
+const g = termToGoal(t);
+console.log(JSON.stringify(g.concl).slice(0,300));
+console.log(blastGoal(g, [], 4, 20000));
