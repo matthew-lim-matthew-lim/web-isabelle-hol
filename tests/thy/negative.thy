@@ -29,4 +29,8 @@ lemma "Suc n = n" by simp
 lemma "take n xs = xs" by auto
 lemma "(n::nat) < m ⟹ n + 1 < m" by arith
 lemma "hd (xs @ ys) = hd xs" by simp
+lemma "length [x ← xs. undefined_thing +] ≤ 0"
+  apply simp
+  done
+lemma "(1::nat) = 2" by simp
 end

@@ -128,6 +128,7 @@ interface Block {
   from: number;
   obtain?: { vars: (Term & { k: 'F' })[]; props: Term[]; names: (string | undefined)[] };
   subgoalIdx?: number;
+  skip?: { depth: number };
   usedFixes?: Map<string, Type>;
   stmtFrees?: Map<string, Type>;
 }
@@ -275,6 +276,21 @@ export class Checker {
       'interpretation',
     ]);
     const diag = new Set(['value', 'term', 'typ', 'thm', 'find_theorems', 'print_theorems', 'prop', 'print_state']);
+    // skipping the proof of a statement that failed to parse
+    const sk = this.top?.skip;
+    if (sk) {
+      if (theoryCmds.has(kw) && kw !== 'termination') {
+        this.stack.pop();
+      } else {
+        if (kw === 'proof' || ((kw === 'have' || kw === 'show' || kw === 'hence' || kw === 'thus' || kw === 'obtain') && false)) sk.depth++;
+        else if (kw === 'qed') {
+          sk.depth--;
+          if (sk.depth <= 0) this.stack.pop();
+        } else if (sk.depth === 0 && ['by', 'done', 'sorry', 'oops', '.', '..'].includes(kw)) this.stack.pop();
+        this.cur.messages.push({ severity: 'info', text: 'Skipped (the statement above has an error)' });
+        return;
+      }
+    }
     if (diag.has(kw)) return this.cmdDiag(kw, r);
     if (theoryCmds.has(kw)) {
       if (this.stack.length && kw !== 'termination') {
@@ -332,7 +348,12 @@ export class Checker {
       case 'corollary':
       case 'proposition':
       case 'schematic_goal':
-        return this.cmdLemma(r, c);
+        try {
+          return this.cmdLemma(r, c);
+        } catch (e) {
+          this.pushSkip(c);
+          throw e;
+        }
       case 'export_code':
       case 'hide_const':
       case 'notation':
@@ -342,6 +363,12 @@ export class Checker {
       default:
         throw new CmdError(`Command "${kw}" is not supported in this web edition`);
     }
+  }
+
+  pushSkip(c: Command) {
+    const b = this.newBlock('dummy', [], [], c.from);
+    b.skip = { depth: 0 };
+    this.stack.push(b);
   }
 
   pushDummy(c: Command) {
@@ -1014,7 +1041,15 @@ export class Checker {
       case 'thus': {
         const chained = kw === 'hence' || kw === 'thus' ? (this.requireMode(b, ['state'], kw), b.thisFacts) : b.mode === 'chain' ? b.chained : [];
         this.requireMode(b, kw === 'hence' || kw === 'thus' ? ['state'] : ['state', 'chain'], kw);
-        const props = this.parseStatements(r, b);
+        let props;
+        try {
+          props = this.parseStatements(r, b);
+        } catch (e) {
+          b.mode = 'state';
+          this.pushSkip(c);
+          this.markError();
+          throw e;
+        }
         const stmts = props.flatMap((p) => p.terms);
         const blk = this.newBlock(kw === 'show' || kw === 'thus' ? 'show' : 'have', stmts, stmts.map((t) => termToGoal(t, new Set(b.ctx.fixed.keys()))), c.from, cloneCtx(b.ctx));
         blk.name = props.length === 1 ? props[0].name : undefined;

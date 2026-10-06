@@ -73,6 +73,8 @@ const SYMS = [
   '‹',
   '›',
   '…',
+  '←',
+  '<-',
   '(',
   ')',
   '[',
@@ -651,7 +653,28 @@ export class InnerParser {
             }
             const save = this.inCase;
             this.inCase = 0;
+            // [x ← xs. P x]  (filter)
+            if (this.peek().kind === 'id' && (this.isSym('←', 1) || this.isSym('<-', 1))) {
+              const x = this.next().v;
+              this.next();
+              const xs = this.parse(0);
+              this.expectSym('.');
+              const p = this.parse(0);
+              this.expectSym(']');
+              this.inCase = save;
+              return app(C('filter'), { t: 'abs', x, body: p }, xs);
+            }
             const first = this.parse(0);
+            // [f x. x ← xs]  (map)
+            if (this.isSym('.') && this.peek(1).kind === 'id' && (this.isSym('←', 2) || this.isSym('<-', 2))) {
+              this.next();
+              const x = this.next().v;
+              this.next();
+              const xs = this.parse(0);
+              this.expectSym(']');
+              this.inCase = save;
+              return app(C('map'), { t: 'abs', x, body: first }, xs);
+            }
             if (this.isSym('..<')) {
               this.next();
               const hi = this.parse(0);

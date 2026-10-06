@@ -374,7 +374,7 @@ lemma length_map[simp]: "length (map f xs) = length xs" sorry
 lemma length_replicate[simp]: "length (replicate n x) = n" sorry
 lemma length_0_conv[simp]: "(length xs = 0) = (xs = [])" sorry
 lemma length_greater_0_conv[simp]: "(0 < length xs) = (xs ≠ [])" sorry
-lemma length_filter_le: "length (filter P xs) ≤ length xs" sorry
+lemma length_filter_le[simp]: "length (filter P xs) ≤ length xs" sorry
 lemma length_take[simp]: "length (take n xs) = min (length xs) n" sorry
 lemma length_drop[simp]: "length (drop n xs) = length xs - n" sorry
 lemma length_tl[simp]: "length (tl xs) = length xs - 1" sorry
@@ -427,6 +427,7 @@ lemma sorted_append: "sorted (xs @ ys) = (sorted xs ∧ sorted ys ∧ (∀x ∈ 
 lemma fst_conv[simp]: "fst (a, b) = a" sorry
 lemma snd_conv[simp]: "snd (a, b) = b" sorry
 lemma prod.inject: "((a, b) = (c, d)) = (a = c ∧ b = d)" sorry
+lemma prod.collapse[simp]: "(fst p, snd p) = p" sorry
 lemma surjective_pairing: "p = (fst p, snd p)" sorry
 lemma prod_eqI: "⟦fst p = fst q; snd p = snd q⟧ ⟹ p = q" sorry
 lemma option.inject: "(Some a = Some b) = (a = b)" sorry

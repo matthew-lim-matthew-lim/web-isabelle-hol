@@ -67,13 +67,13 @@ export const ProofWorkspace = forwardRef<WorkspaceHandle, Props>(function ProofW
   if (variant === 'ide') {
     return (
       <div className="flex h-full min-h-0 flex-col lg:flex-row">
-        <div className="flex min-h-0 flex-1 flex-col border-slate-200 dark:border-slate-800 lg:border-r">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col border-slate-200 dark:border-slate-800 lg:border-r">
           {toolbar}
           <SymbolBar onInsert={(s) => editor.current?.insert(s)} className="border-b" />
           <div className="min-h-0 flex-1 overflow-hidden">{editorEl}</div>
         </div>
         <div
-          className={`flex min-h-0 flex-col border-t border-slate-200 dark:border-slate-800 lg:h-auto lg:w-[42%] lg:border-t-0 ${
+          className={`flex min-h-0 flex-col border-t border-slate-200 dark:border-slate-800 lg:h-auto lg:w-[42%] lg:shrink-0 lg:border-t-0 ${
             outputOpen ? 'h-[40%]' : 'h-auto'
           }`}
         >

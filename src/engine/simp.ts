@@ -883,6 +883,7 @@ export function simpGoal(thy: Theory, ss: Simpset, g: Goal, opts: SimpOptions & 
   const useAsms = opts.useAsms !== false;
   const simpAsms = opts.simpAsms !== false;
   const newPrems: Term[] = [];
+  const solvedArith: Term[] = []; // arithmetic premises proved by simp rules; still useful for linarith
   let changed = false;
   const runWithPrems = <T>(prems: Term[], f: () => T): T => {
     if (prems.length === 0) return f();
@@ -897,11 +898,12 @@ export function simpGoal(thy: Theory, ss: Simpset, g: Goal, opts: SimpOptions & 
     if (isConst(np, 'False')) return { kind: 'solved' };
     if (isConst(np, 'True')) {
       changed = true;
+      if (isArithRel(p)) solvedArith.push(p);
       continue;
     }
     newPrems.push(np);
   }
-  const concl = runWithPrems(useAsms ? newPrems : [], () => S.norm(g.concl));
+  const concl = runWithPrems(useAsms ? [...newPrems, ...solvedArith] : [], () => S.norm(g.concl));
   if (!termEq(concl, g.concl)) changed = true;
   if (isConst(concl, 'True')) return { kind: 'solved' };
   if (newPrems.some((p) => termEq(p, concl))) return { kind: 'solved' };
@@ -913,9 +915,9 @@ export function simpGoal(thy: Theory, ss: Simpset, g: Goal, opts: SimpOptions & 
   // arithmetic solver
   if (opts.arith !== false) {
     const arithGoal = isArithRel(concl) || isConst(concl, 'False') || destConj(concl).every(isArithRel) || isArithDisj(concl);
-    if (arithGoal && (isArithRel(concl) || newPrems.some((p) => isArithRel(p) || destConj(p).some(isArithRel)))) {
+    if (arithGoal && (isArithRel(concl) || solvedArith.length > 0 || newPrems.some((p) => isArithRel(p) || destConj(p).some(isArithRel)))) {
       try {
-        if (linarith(newPrems, concl)) return { kind: 'solved' };
+        if (linarith([...newPrems, ...solvedArith], concl)) return { kind: 'solved' };
       } catch {
         /* ignore */
       }
