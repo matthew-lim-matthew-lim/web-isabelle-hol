@@ -96,7 +96,7 @@ export function IdeApp() {
   const toolbar = (
     <div className="relative flex items-center gap-1 border-b border-slate-200 px-2 py-1.5 dark:border-slate-800">
       <select
-        className="min-w-0 max-w-[45%] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
+        className="min-w-0 max-w-[45%] rounded-md border border-slate-300 bg-white px-2 py-1 text-base sm:text-sm dark:border-slate-700 dark:bg-slate-900"
         value={file.id}
         onChange={(e) => open(e.target.value)}
         aria-label="Theory file"

@@ -29,9 +29,14 @@ body {
   font-family: 'JetBrains Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
   line-height: 1.55;
 }
-@media (max-width: 640px) {
-  .cm-editor {
-    font-size: 13px;
+/* iOS Safari zooms into any focused editable text smaller than 16px; keep it at 16px on touch devices. */
+@media (max-width: 1023px), (pointer: coarse) {
+  .cm-editor,
+  .cm-content,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 .cm-isa-error {
